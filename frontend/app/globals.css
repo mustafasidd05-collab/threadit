@@ -1,0 +1,63 @@
+@import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-base text-txt font-body antialiased;
+  }
+  ::selection {
+    @apply bg-gold/30 text-txt;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-surface-1; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gold-dim; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gold text-base font-heading font-semibold px-5 py-2.5 rounded-lg
+           hover:bg-gold-light transition-all duration-200 active:scale-[0.97];
+  }
+  .btn-secondary {
+    @apply border border-border text-txt px-5 py-2.5 rounded-lg
+           hover:border-gold hover:text-gold transition-all duration-200;
+  }
+  .btn-ghost {
+    @apply text-txt-muted px-3 py-1.5 rounded-md
+           hover:text-gold hover:bg-surface-3 transition-all duration-150;
+  }
+  .input-field {
+    @apply w-full bg-surface-2 border border-border rounded-lg px-4 py-3 text-txt
+           placeholder:text-txt-muted/50 focus:outline-none focus:border-gold
+           focus:ring-1 focus:ring-gold/30 transition-all duration-200;
+  }
+  .card {
+    @apply bg-surface-2 border border-border rounded-xl p-5
+           hover:border-gold/30 transition-all duration-300;
+  }
+  .grain::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+  }
+}
+
+@layer utilities {
+  .fade-up {
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
