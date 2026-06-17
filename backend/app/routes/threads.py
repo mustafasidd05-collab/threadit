@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db
 from app.schemas.thread import ThreadCreate, ThreadUpdate, ThreadOut, ThreadTree
-from app.schemas.vote import VoteCreate, VoteInfo
+from app.schemas.vote import VoteCreate
+from app.schemas.thread import VoteInfo
 from app.services.thread_service import (
     create_thread,
     get_top_level_threads,
