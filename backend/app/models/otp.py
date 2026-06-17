@@ -16,11 +16,11 @@ class OTPVerification(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     otp_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(), default=datetime.utcnow
     )
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc) + timedelta(minutes=5),
+        DateTime(),
+        default=lambda: datetime.utcnow() + timedelta(minutes=5),
     )
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
     attempts: Mapped[int] = mapped_column(Integer, default=0)

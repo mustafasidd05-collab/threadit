@@ -29,7 +29,7 @@ async def request_signup_otp(db: AsyncSession, data: SignupRequest) -> str:
         )
 
     # Rate limit: max 3 OTPs per email per 15 minutes
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=15)
     count_result = await db.execute(
         select(func.count())
         .select_from(OTPVerification)
@@ -89,7 +89,9 @@ async def verify_signup_otp(db: AsyncSession, data: OTPVerify) -> None:
         raise HTTPException(status_code=400, detail="No pending OTP for this email")
 
     # Check expiry
-    if datetime.now(timezone.utc) > otp_record.expires_at:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    expiry = otp_record.expires_at.replace(tzinfo=None) if otp_record.expires_at else datetime.now(timezone.utc).replace(tzinfo=None)
+    if now > expiry:
         await db.delete(otp_record)
         raise HTTPException(status_code=400, detail="OTP has expired. Please sign up again.")
 
