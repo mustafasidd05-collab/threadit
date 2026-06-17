@@ -22,6 +22,7 @@ export default function SignupPage() {
     setError("");
     try {
       const res = await authApi.signup({ username, email, password });
+      if (res.otp) setDevOtp(res.otp);
       setOtpSent(true);
     } catch (err: any) {
       setError(err.message);
@@ -99,7 +100,12 @@ export default function SignupPage() {
         </div>
         <h1 className="font-heading font-bold text-2xl text-txt">Verify your email</h1>
         <p className="text-txt-muted text-sm mt-1">Enter the 6-digit code sent to {email}</p>
-        <p className="text-xs text-gold mt-2 font-mono">Check the backend console for the OTP (dev mode)</p>
+{devOtp && (
+  <div className="mt-3 bg-gold/10 border border-gold/30 rounded-lg p-3 text-center">
+    <p className="text-xs text-txt-muted font-mono mb-1">Dev OTP (remove in production):</p>
+    <p className="text-2xl font-mono font-bold text-gold tracking-[0.3em]">{devOtp}</p>
+  </div>
+)}
       </div>
       <form onSubmit={handleVerifyOtp} className="card space-y-4">
         {error && <p className="text-sm text-down bg-down/10 px-3 py-2 rounded-lg">{error}</p>}

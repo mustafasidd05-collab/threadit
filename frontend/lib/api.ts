@@ -26,7 +26,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 // Auth (OTP flow)
 export const authApi = {
   signup: (data: { username: string; email: string; password: string }) =>
-    api<{ message: string; email: string }>("/auth/signup", {
+    api<{ message: string; email: string; otp?: string }>("/auth/signup", {
       method: "POST", body: JSON.stringify(data),
     }),
   verifyOtp: (data: { email: string; otp: string }) =>
@@ -34,7 +34,7 @@ export const authApi = {
       method: "POST", body: JSON.stringify(data),
     }),
   resendOtp: (data: { username: string; email: string; password: string }) =>
-    api<{ message: string; email: string }>("/auth/resend-otp", {
+    api<{ message: string; email: string; otp?: string }>("/auth/resend-otp", {
       method: "POST", body: JSON.stringify(data),
     }),
   login: (data: { email: string; password: string }) =>
