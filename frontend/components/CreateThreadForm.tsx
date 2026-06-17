@@ -6,15 +6,12 @@ import { threadsApi } from "@/lib/api";
 
 interface Props {
   parentThreadId?: string;
+  tribeId?: string;
   onSuccess?: () => void;
   compact?: boolean;
 }
 
-export default function CreateThreadForm({
-  parentThreadId,
-  onSuccess,
-  compact = false,
-}: Props) {
+export default function CreateThreadForm({ parentThreadId, tribeId, onSuccess, compact = false }: Props) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,9 +27,10 @@ export default function CreateThreadForm({
     setError("");
     try {
       const thread = await threadsApi.create({
-        title: parentThreadId ? title || "Reply" : title,
+        title: parentThreadId ? (title || "Reply") : title,
         content,
         parent_thread_id: parentThreadId,
+        tribe_id: tribeId,
       });
       setTitle("");
       setContent("");
@@ -47,32 +45,15 @@ export default function CreateThreadForm({
 
   return (
     <form onSubmit={handleSubmit} className={`space-y-4 ${compact ? "" : "card"}`}>
-      {!compact && (
-        <h2 className="font-heading font-bold text-lg text-gold">
-          Start a Discussion
-        </h2>
-      )}
-      {error && (
-        <p className="text-sm text-down bg-down/10 px-3 py-2 rounded-lg">{error}</p>
-      )}
+      {!compact && <h2 className="font-heading font-bold text-lg text-gold">Start a Discussion</h2>}
+      {error && <p className="text-sm text-down bg-down/10 px-3 py-2 rounded-lg">{error}</p>}
       {!parentThreadId && (
-        <input
-          type="text"
-          placeholder="Thread title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="input-field"
-          required
-        />
+        <input type="text" placeholder="Thread title" value={title} onChange={(e) => setTitle(e.target.value)} className="input-field" required />
       )}
       <textarea
-        placeholder={
-          parentThreadId ? "Write your reply..." : "Share your thoughts..."
-        }
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="input-field min-h-[120px] resize-y"
-        required
+        placeholder={parentThreadId ? "Write your reply..." : "Share your thoughts..."}
+        value={content} onChange={(e) => setContent(e.target.value)}
+        className="input-field min-h-[120px] resize-y" required
       />
       <div className="flex justify-end">
         <button type="submit" disabled={loading} className="btn-primary text-sm">

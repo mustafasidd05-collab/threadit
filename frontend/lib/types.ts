@@ -3,6 +3,7 @@ export interface User {
   username: string;
   email: string;
   profile_image: string | null;
+  email_verified?: boolean;
   created_at: string;
   last_seen: string;
 }
@@ -18,10 +19,12 @@ export interface Thread {
   content: string;
   author: User;
   parent_thread_id: string | null;
+  tribe_id: string | null;
   created_at: string;
   updated_at: string;
   reply_count: number;
   vote_info: VoteInfo;
+  is_deleted: boolean;
 }
 
 export interface ThreadTree extends Thread {
@@ -52,4 +55,29 @@ export interface FileRecord {
   file_type: string;
   file_url: string;
   uploaded_at: string;
+}
+
+export interface Tribe {
+  id: string;
+  name: string;
+  description: string;
+  creator: User;
+  created_at: string;
+  member_count: number;
+  is_member: boolean;
+  user_role: string | null;
+}
+
+export interface SearchResults {
+  threads: Thread[];
+  users: User[];
+  comments: CommentResult[];
+}
+
+export interface CommentResult {
+  id: string;
+  content: string;
+  author: User;
+  thread_id: string;
+  thread_title: string;
 }

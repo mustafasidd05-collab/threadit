@@ -8,26 +8,24 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database.session import engine, async_session
 from app.database.base import Base
-from app.models import User, Thread, Vote, Message, File  # noqa: register models
+from app.models import User, Thread, Vote, Message, File, OTPVerification, Tribe, TribeMember
 from app.auth.jwt_handler import decode_access_token
 from app.websocket.manager import manager
 from app.services.message_service import save_message
 from app.schemas.message import MessageCreate
-from app.routes import auth, users, threads, chat, files
+from app.routes import auth, users, threads, chat, files, otp, search, tribes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Auto-create tables (dev convenience — use Alembic in production)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
 
-app = FastAPI(title="ThreadIt API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="ThreadIt API", version="2.0.0", lifespan=lifespan)
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -36,16 +34,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve uploaded files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Register routers
+# Register all routers
+app.include_router(otp.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(threads.router)
 app.include_router(chat.router)
 app.include_router(files.router)
+app.include_router(search.router)
+app.include_router(tribes.router)
 
 
 @app.get("/health")
@@ -53,10 +53,8 @@ async def health():
     return {"status": "ok"}
 
 
-# ── WebSocket endpoint ──────────────────────────────────────────
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket, token: str = Query(...)):
-    """Real-time chat. Auth via ?token= query param."""
     payload = decode_access_token(token)
     if not payload:
         await websocket.close(code=4001)

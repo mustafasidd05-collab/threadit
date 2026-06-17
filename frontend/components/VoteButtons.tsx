@@ -34,28 +34,18 @@ export default function VoteButtons({ threadId, voteInfo, onVoteChange }: Props)
         onClick={() => vote(1)}
         disabled={loading}
         className={`w-7 h-7 flex items-center justify-center rounded text-xs transition-all duration-150
-          ${info.user_vote === 1
-            ? "bg-up/20 text-up"
-            : "text-txt-muted hover:text-up hover:bg-up/10"
-          }`}
+          ${info.user_vote === 1 ? "bg-up/20 text-up" : "text-txt-muted hover:text-up hover:bg-up/10"}`}
       >
         +
       </button>
-      <span
-        className={`text-xs font-mono tabular-nums ${
-          info.score > 0 ? "text-up" : info.score < 0 ? "text-down" : "text-txt-muted"
-        }`}
-      >
+      <span className={`text-xs font-mono tabular-nums ${info.score > 0 ? "text-up" : info.score < 0 ? "text-down" : "text-txt-muted"}`}>
         {info.score}
       </span>
       <button
         onClick={() => vote(-1)}
         disabled={loading}
         className={`w-7 h-7 flex items-center justify-center rounded text-xs transition-all duration-150
-          ${info.user_vote === -1
-            ? "bg-down/20 text-down"
-            : "text-txt-muted hover:text-down hover:bg-down/10"
-          }`}
+          ${info.user_vote === -1 ? "bg-down/20 text-down" : "text-txt-muted hover:text-down hover:bg-down/10"}`}
       >
         -
       </button>

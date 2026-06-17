@@ -2,18 +2,19 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db
 from app.schemas.thread import ThreadCreate, ThreadUpdate, ThreadOut, ThreadTree
-from app.schemas.vote import VoteCreate
-from app.schemas.thread import VoteInfo
+from app.schemas.vote import VoteCreate, VoteInfo
 from app.services.thread_service import (
     create_thread,
     get_top_level_threads,
     get_thread_with_replies,
     update_thread,
-    delete_thread,
+    soft_delete_thread,
     cast_vote,
 )
+from app.services.tribe_service import check_tribe_membership
 from app.auth.dependencies import get_current_user, get_optional_user
 from app.models.user import User
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/threads", tags=["threads"])
 
@@ -24,6 +25,12 @@ async def create_new_thread(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Check tribe membership if posting to a tribe
+    if data.tribe_id:
+        membership = await check_tribe_membership(db, data.tribe_id, current_user.id)
+        if not membership:
+            raise HTTPException(status_code=403, detail="Must join tribe to post")
+
     thread = await create_thread(db, current_user.id, data)
     return ThreadOut(
         id=thread.id,
@@ -31,6 +38,7 @@ async def create_new_thread(
         content=thread.content,
         author=current_user,
         parent_thread_id=thread.parent_thread_id,
+        tribe_id=thread.tribe_id,
         created_at=thread.created_at,
         updated_at=thread.updated_at,
         reply_count=0,
@@ -42,11 +50,12 @@ async def create_new_thread(
 async def list_threads(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    tribe_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     user_id = current_user.id if current_user else None
-    return await get_top_level_threads(db, skip, limit, user_id)
+    return await get_top_level_threads(db, skip, limit, user_id, tribe_id=tribe_id)
 
 
 @router.get("/{thread_id}", response_model=ThreadTree)
@@ -73,18 +82,20 @@ async def edit_thread(
         content=thread.content,
         author=current_user,
         parent_thread_id=thread.parent_thread_id,
+        tribe_id=thread.tribe_id,
         created_at=thread.created_at,
         updated_at=thread.updated_at,
     )
 
 
-@router.delete("/{thread_id}", status_code=204)
+@router.delete("/{thread_id}", status_code=200)
 async def remove_thread(
     thread_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await delete_thread(db, thread_id, current_user.id)
+    await soft_delete_thread(db, thread_id, current_user.id)
+    return {"message": "Thread deleted"}
 
 
 @router.post("/{thread_id}/vote", response_model=VoteInfo)

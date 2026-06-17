@@ -19,6 +19,12 @@ class Thread(Base):
     parent_thread_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("threads.id"), nullable=True, index=True
     )
+    tribe_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("tribes.id"), nullable=True, index=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -34,3 +40,4 @@ class Thread(Base):
     )
     children = relationship("Thread", back_populates="parent", lazy="selectin")
     votes = relationship("Vote", back_populates="thread", lazy="selectin")
+    tribe = relationship("Tribe", lazy="selectin")

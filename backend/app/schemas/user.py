@@ -18,6 +18,7 @@ class UserOut(BaseModel):
     username: str
     email: str
     profile_image: str | None
+    email_verified: bool = True
     created_at: datetime
     last_seen: datetime
 
