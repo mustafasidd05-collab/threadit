@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { threadsApi } from "@/lib/api";
 import type { Thread } from "@/lib/types";
 import ThreadCard from "@/components/ThreadCard";
+import { ListSkeleton } from "@/components/Skeleton";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -14,13 +15,20 @@ export default function HomePage() {
 
   const loadThreads = () => {
     setLoading(true);
-    threadsApi.list(page * limit, limit)
+    threadsApi
+      .list(page * limit, limit)
       .then(setThreads)
       .catch(() => {})
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadThreads(); }, [page]);
+  useEffect(() => {
+    loadThreads();
+  }, [page]);
+
+  const handleDelete = (threadId: string) => {
+    setThreads((prev) => prev.filter((t) => t.id !== threadId));
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -31,17 +39,42 @@ export default function HomePage() {
         </div>
         <Link href="/create" className="btn-primary text-sm">+ New Thread</Link>
       </div>
+
       {loading ? (
-        <div className="space-y-4">{[...Array(5)].map((_, i) => <div key={i} className="card animate-pulse h-28" />)}</div>
+        <ListSkeleton count={5} />
       ) : threads.length === 0 ? (
-        <div className="card text-center py-12"><p className="text-txt-muted font-mono text-sm">No threads yet. Be the first to start a discussion.</p></div>
+        <div className="card text-center py-12">
+          <p className="text-txt-muted font-mono text-sm">No threads yet. Be the first to start a discussion.</p>
+        </div>
       ) : (
-        <div className="space-y-3">{threads.map((thread, i) => <ThreadCard key={thread.id} thread={thread} index={i} onDelete={loadThreads} />)}</div>
+        <div className="space-y-3">
+          {threads.map((thread, i) => (
+            <ThreadCard
+              key={thread.id}
+              thread={thread}
+              index={i}
+              onDelete={() => handleDelete(thread.id)}
+            />
+          ))}
+        </div>
       )}
+
       <div className="flex justify-center gap-3 mt-8">
-        <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="btn-secondary text-sm disabled:opacity-30">Previous</button>
+        <button
+          onClick={() => setPage(Math.max(0, page - 1))}
+          disabled={page === 0}
+          className="btn-secondary text-sm disabled:opacity-30"
+        >
+          Previous
+        </button>
         <span className="flex items-center text-sm text-txt-muted font-mono">Page {page + 1}</span>
-        <button onClick={() => setPage(page + 1)} disabled={threads.length < limit} className="btn-secondary text-sm disabled:opacity-30">Next</button>
+        <button
+          onClick={() => setPage(page + 1)}
+          disabled={threads.length < limit}
+          className="btn-secondary text-sm disabled:opacity-30"
+        >
+          Next
+        </button>
       </div>
     </div>
   );

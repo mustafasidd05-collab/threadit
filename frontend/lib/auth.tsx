@@ -5,15 +5,16 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
   ReactNode,
 } from "react";
-import { usersApi } from "./api";
+import { usersApi, setTokens, clearTokens, getAccessToken } from "./api";
 import type { User } from "./types";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -30,9 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+  const loadUser = useCallback(async () => {
+    if (!getAccessToken()) {
       setUser(null);
       setLoading(false);
       return;
@@ -41,31 +41,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await usersApi.me();
       setUser(me);
     } catch {
-      localStorage.removeItem("token");
+      clearTokens();
       setUser(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadUser();
   }, []);
 
-  const login = async (token: string) => {
-    localStorage.setItem("token", token);
+  // Load user once on mount
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
+  const login = async (accessToken: string, refreshToken: string) => {
+    setTokens(accessToken, refreshToken);
     await loadUser();
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    clearTokens();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout, refresh: loadUser }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, logout, refresh: loadUser }}>
       {children}
     </AuthContext.Provider>
   );

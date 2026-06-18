@@ -17,24 +17,35 @@ interface Props {
 export default function ThreadCard({ thread, index = 0, onDelete }: Props) {
   const { user } = useAuth();
   const [deleted, setDeleted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const timeAgo = formatRelativeTime(thread.created_at);
   const isAuthor = user?.id === thread.author.id;
 
   const handleDelete = async () => {
     if (!confirm("Delete this thread?")) return;
+    setDeleting(true);
+
+    // Optimistic: hide immediately
+    setDeleted(true);
+
     try {
       await threadsApi.delete(thread.id);
-      setDeleted(true);
       onDelete?.();
-    } catch (e: any) {
-      alert(e.message);
+    } catch {
+      // Revert on failure
+      setDeleted(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
   if (deleted) return null;
 
   return (
-    <div className="card flex gap-4 fade-up" style={{ animationDelay: `${index * 0.06}s` }}>
+    <div
+      className="card flex gap-4 fade-up"
+      style={{ animationDelay: `${index * 0.06}s` }}
+    >
       <VoteButtons threadId={thread.id} voteInfo={thread.vote_info} />
 
       <div className="flex-1 min-w-0">
@@ -57,8 +68,12 @@ export default function ThreadCard({ thread, index = 0, onDelete }: Props) {
           <span>{timeAgo}</span>
           <span>{thread.reply_count} {thread.reply_count === 1 ? "reply" : "replies"}</span>
           {isAuthor && !thread.is_deleted && (
-            <button onClick={handleDelete} className="text-down hover:text-down/80 transition-colors">
-              Delete
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-down hover:text-down/80 transition-colors disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
             </button>
           )}
         </div>

@@ -13,7 +13,6 @@ async def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Extract and validate the current user from the JWT token."""
     if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,7 +44,6 @@ async def get_optional_user(
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
-    """Same as get_current_user but returns None instead of 401."""
     if token is None:
         return None
     payload = decode_access_token(token)

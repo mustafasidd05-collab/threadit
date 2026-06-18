@@ -19,8 +19,8 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const { access_token } = await authApi.login({ email, password });
-      await login(access_token);
+      const { access_token, refresh_token } = await authApi.login({ email, password });
+      await login(access_token, refresh_token);
       router.push("/home");
     } catch (err: any) {
       setError(err.message);
@@ -40,9 +40,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="card space-y-4">
-        {error && (
-          <p className="text-sm text-down bg-down/10 px-3 py-2 rounded-lg">{error}</p>
-        )}
+        {error && <p className="text-sm text-down bg-down/10 px-3 py-2 rounded-lg">{error}</p>}
         <div>
           <label className="block text-xs font-mono text-txt-muted mb-1.5 uppercase tracking-wider">Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" placeholder="you@example.com" required />
@@ -51,14 +49,30 @@ export default function LoginPage() {
           <label className="block text-xs font-mono text-txt-muted mb-1.5 uppercase tracking-wider">Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" placeholder="Enter your password" required minLength={8} />
         </div>
-        <button type="submit" disabled={loading} className="btn-primary w-full text-sm">
-          {loading ? "Signing in..." : "Sign In"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full text-sm flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-base border-t-transparent rounded-full animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </button>
       </form>
 
+      <div className="mt-4 p-3 bg-surface-3 rounded-lg border border-border">
+        <p className="text-xs text-txt-muted font-mono text-center">
+          Demo: demo@threadit.com / demo1234
+        </p>
+      </div>
+
       <p className="text-center text-sm text-txt-muted mt-6">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-gold hover:text-gold-light transition-colors">Create one</Link>
+        Don&apos;t have an account? <Link href="/signup" className="text-gold hover:text-gold-light transition-colors">Create one</Link>
       </p>
     </div>
   );

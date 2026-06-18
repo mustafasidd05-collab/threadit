@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { usersApi } from "@/lib/api";
 import type { User, Thread } from "@/lib/types";
 import ThreadCard from "@/components/ThreadCard";
+import { ListSkeleton, ProfileSkeleton } from "@/components/Skeleton";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default function ProfilePage() {
@@ -15,6 +16,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([usersApi.byUsername(username), usersApi.userThreads(username)])
       .then(([u, t]) => { setUser(u); setThreads(t); })
       .catch(() => {})
@@ -22,11 +24,23 @@ export default function ProfilePage() {
   }, [username]);
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto px-6 py-8"><div className="card animate-pulse h-32" /></div>;
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        <ProfileSkeleton />
+        <div className="h-6 w-40"><div className="animate-pulse bg-surface-3 rounded h-full" /></div>
+        <ListSkeleton count={3} />
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="max-w-3xl mx-auto px-6 py-8"><div className="card text-center py-12"><p className="text-txt-muted font-mono">User not found</p></div></div>;
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="card text-center py-12">
+          <p className="text-txt-muted font-mono">User not found</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -43,9 +57,13 @@ export default function ProfilePage() {
       </div>
       <h2 className="font-heading font-bold text-lg text-txt mb-4">Threads by {user.username}</h2>
       {threads.length === 0 ? (
-        <div className="card text-center py-8"><p className="text-txt-muted font-mono text-sm">No threads yet</p></div>
+        <div className="card text-center py-8">
+          <p className="text-txt-muted font-mono text-sm">No threads yet</p>
+        </div>
       ) : (
-        <div className="space-y-3">{threads.map((thread, i) => <ThreadCard key={thread.id} thread={thread} index={i} />)}</div>
+        <div className="space-y-3">
+          {threads.map((thread, i) => <ThreadCard key={thread.id} thread={thread} index={i} />)}
+        </div>
       )}
     </div>
   );

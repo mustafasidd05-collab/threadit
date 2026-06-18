@@ -52,11 +52,20 @@ export default function CreateThreadForm({ parentThreadId, tribeId, onSuccess, c
       )}
       <textarea
         placeholder={parentThreadId ? "Write your reply..." : "Share your thoughts..."}
-        value={content} onChange={(e) => setContent(e.target.value)}
-        className="input-field min-h-[120px] resize-y" required
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        className="input-field min-h-[120px] resize-y"
+        required
       />
       <div className="flex justify-end">
-        <button type="submit" disabled={loading} className="btn-primary text-sm">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary text-sm flex items-center gap-2"
+        >
+          {loading && (
+            <span className="w-3 h-3 border-2 border-base border-t-transparent rounded-full animate-spin" />
+          )}
           {loading ? "Posting..." : parentThreadId ? "Reply" : "Create Thread"}
         </button>
       </div>

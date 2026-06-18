@@ -16,13 +16,25 @@ export default function VoteButtons({ threadId, voteInfo, onVoteChange }: Props)
 
   const vote = async (value: number) => {
     const newValue = info.user_vote === value ? 0 : value;
+
+    // Optimistic update
+    const prevInfo = { ...info };
+    const optimisticScore =
+      info.score - (info.user_vote || 0) + newValue;
+    const optimisticInfo: VoteInfo = {
+      score: optimisticScore,
+      user_vote: newValue === 0 ? null : newValue,
+    };
+    setInfo(optimisticInfo);
+
     setLoading(true);
     try {
       const result = await threadsApi.vote(threadId, newValue);
       setInfo(result);
       onVoteChange?.(result);
     } catch {
-      // silently fail
+      // Revert on failure
+      setInfo(prevInfo);
     } finally {
       setLoading(false);
     }
@@ -38,7 +50,9 @@ export default function VoteButtons({ threadId, voteInfo, onVoteChange }: Props)
       >
         +
       </button>
-      <span className={`text-xs font-mono tabular-nums ${info.score > 0 ? "text-up" : info.score < 0 ? "text-down" : "text-txt-muted"}`}>
+      <span className={`text-xs font-mono tabular-nums ${
+        info.score > 0 ? "text-up" : info.score < 0 ? "text-down" : "text-txt-muted"
+      }`}>
         {info.score}
       </span>
       <button

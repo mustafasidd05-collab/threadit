@@ -1,12 +1,55 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-function getToken(): string | null {
+function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
+  return localStorage.getItem("access_token");
 }
 
-export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("refresh_token");
+}
+
+function setTokens(access: string, refresh: string) {
+  localStorage.setItem("access_token", access);
+  localStorage.setItem("refresh_token", refresh);
+}
+
+function clearTokens() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(`${BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) {
+      clearTokens();
+      return false;
+    }
+    const data = await res.json();
+    setTokens(data.access_token, data.refresh_token);
+    return true;
+  } catch {
+    clearTokens();
+    return false;
+  }
+}
+
+export async function api<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = getAccessToken();
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -14,7 +57,24 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (!(options.body instanceof FormData))
     headers["Content-Type"] = "application/json";
 
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  let res = await fetch(`${BASE}${path}`, { ...options, headers });
+
+  // If 401, try to refresh token and retry once
+  if (res.status === 401 && getRefreshToken()) {
+    // Prevent multiple simultaneous refreshes
+    if (!refreshPromise) {
+      refreshPromise = tryRefreshToken();
+    }
+    const refreshed = await refreshPromise;
+    refreshPromise = null;
+
+    if (refreshed) {
+      const newToken = getAccessToken();
+      if (newToken) headers["Authorization"] = `Bearer ${newToken}`;
+      res = await fetch(`${BASE}${path}`, { ...options, headers });
+    }
+  }
+
   if (res.status === 204) return undefined as T;
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Request failed" }));
@@ -23,10 +83,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return res.json();
 }
 
-// Auth (OTP flow)
+export { setTokens, clearTokens, getAccessToken };
+
+// Auth
 export const authApi = {
   signup: (data: { username: string; email: string; password: string }) =>
-    api<{ message: string; email: string; otp?: string }>("/auth/signup", {
+    api<any>("/auth/signup", {
       method: "POST", body: JSON.stringify(data),
     }),
   verifyOtp: (data: { email: string; otp: string }) =>
@@ -34,18 +96,18 @@ export const authApi = {
       method: "POST", body: JSON.stringify(data),
     }),
   resendOtp: (data: { username: string; email: string; password: string }) =>
-    api<{ message: string; email: string; otp?: string }>("/auth/resend-otp", {
+    api<any>("/auth/resend-otp", {
       method: "POST", body: JSON.stringify(data),
     }),
   login: (data: { email: string; password: string }) =>
-    api<{ access_token: string }>("/auth/login", {
+    api<{ access_token: string; refresh_token: string }>("/auth/login", {
       method: "POST", body: JSON.stringify(data),
     }),
 };
 
 // Users
 export const usersApi = {
-  me: () => api<any>("/users/me"),
+  me: () => api<any>("/auth/me"),
   byUsername: (username: string) => api<any>(`/users/${username}`),
   userThreads: (username: string) => api<any[]>(`/users/${username}/threads`),
   updateProfile: (data: any) =>

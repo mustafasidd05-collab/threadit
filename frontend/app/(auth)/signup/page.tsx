@@ -40,7 +40,10 @@ export default function SignupPage() {
       </div>
 
       {success ? (
-        <div className="card text-center py-8">
+        <div className="card text-center py-8 fade-up">
+          <div className="w-12 h-12 bg-up/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <span className="text-up text-xl">+</span>
+          </div>
           <p className="text-gold font-heading font-semibold text-lg">Account created!</p>
           <p className="text-txt-muted text-sm mt-2">Redirecting to login...</p>
         </div>
@@ -59,8 +62,19 @@ export default function SignupPage() {
             <label className="block text-xs font-mono text-txt-muted mb-1.5 uppercase tracking-wider">Password</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" placeholder="Min 8 characters" required minLength={8} />
           </div>
-          <button type="submit" disabled={loading} className="btn-primary w-full text-sm">
-            {loading ? "Creating account..." : "Sign Up"}
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary w-full text-sm flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-base border-t-transparent rounded-full animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              "Sign Up"
+            )}
           </button>
         </form>
       )}
