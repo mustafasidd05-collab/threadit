@@ -1,68 +1,96 @@
 "use client";
 
-import { threadsApi } from "@/lib/api";
 import { useState } from "react";
-import type { VoteInfo } from "@/lib/types";
+import { motion } from "framer-motion";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import { threadsApi } from "@/lib/api";
 
-interface Props {
+interface VoteButtonsProps {
   threadId: string;
-  voteInfo: VoteInfo;
-  onVoteChange?: (info: VoteInfo) => void;
+  initialScore: number;
+  initialVote: number;
+  compact?: boolean;
 }
 
-export default function VoteButtons({ threadId, voteInfo, onVoteChange }: Props) {
-  const [info, setInfo] = useState(voteInfo);
-  const [loading, setLoading] = useState(false);
+export default function VoteButtons({
+  threadId,
+  initialScore,
+  initialVote,
+  compact = false,
+}: VoteButtonsProps) {
+  const [score, setScore] = useState(initialScore);
+  const [userVote, setUserVote] = useState(initialVote);
+  const [voting, setVoting] = useState(false);
 
-  const vote = async (value: number) => {
-    const newValue = info.user_vote === value ? 0 : value;
+  const handleVote = async (value: number) => {
+    if (voting) return;
+    setVoting(true);
 
-    // Optimistic update
-    const prevInfo = { ...info };
-    const optimisticScore =
-      info.score - (info.user_vote || 0) + newValue;
-    const optimisticInfo: VoteInfo = {
-      score: optimisticScore,
-      user_vote: newValue === 0 ? null : newValue,
-    };
-    setInfo(optimisticInfo);
+    const newValue = userVote === value ? 0 : value;
+    const diff = newValue - userVote;
 
-    setLoading(true);
+    setScore(score + diff);
+    setUserVote(newValue);
+
     try {
-      const result = await threadsApi.vote(threadId, newValue);
-      setInfo(result);
-      onVoteChange?.(result);
+      await threadsApi.vote(threadId, newValue);
     } catch {
-      // Revert on failure
-      setInfo(prevInfo);
+      setScore(score);
+      setUserVote(userVote);
     } finally {
-      setLoading(false);
+      setVoting(false);
     }
   };
 
+  const iconSize = compact ? 18 : 22;
+
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <button
-        onClick={() => vote(1)}
-        disabled={loading}
-        className={`w-7 h-7 flex items-center justify-center rounded text-xs transition-all duration-150
-          ${info.user_vote === 1 ? "bg-up/20 text-up" : "text-txt-muted hover:text-up hover:bg-up/10"}`}
+    <div
+      className={`flex flex-col items-center gap-0.5 ${
+        compact ? "" : "gap-1"
+      }`}
+    >
+      <motion.button
+        whileTap={{ scale: 0.85 }}
+        onClick={() => handleVote(1)}
+        className={`rounded-lg transition-all duration-200 ${
+          compact ? "p-0.5" : "p-1"
+        } ${
+          userVote === 1
+            ? "text-up bg-up/10"
+            : "text-txt-faint hover:text-up hover:bg-up/10"
+        }`}
       >
-        +
-      </button>
-      <span className={`text-xs font-mono tabular-nums ${
-        info.score > 0 ? "text-up" : info.score < 0 ? "text-down" : "text-txt-muted"
-      }`}>
-        {info.score}
+        <ChevronUp size={iconSize} strokeWidth={2.5} />
+      </motion.button>
+
+      <span
+        className={`font-mono font-bold leading-none ${
+          compact ? "text-xs" : "text-sm"
+        } ${
+          userVote === 1
+            ? "text-up"
+            : userVote === -1
+            ? "text-down"
+            : "text-txt-muted"
+        }`}
+      >
+        {score}
       </span>
-      <button
-        onClick={() => vote(-1)}
-        disabled={loading}
-        className={`w-7 h-7 flex items-center justify-center rounded text-xs transition-all duration-150
-          ${info.user_vote === -1 ? "bg-down/20 text-down" : "text-txt-muted hover:text-down hover:bg-down/10"}`}
+
+      <motion.button
+        whileTap={{ scale: 0.85 }}
+        onClick={() => handleVote(-1)}
+        className={`rounded-lg transition-all duration-200 ${
+          compact ? "p-0.5" : "p-1"
+        } ${
+          userVote === -1
+            ? "text-down bg-down/10"
+            : "text-txt-faint hover:text-down hover:bg-down/10"
+        }`}
       >
-        -
-      </button>
+        <ChevronDown size={iconSize} strokeWidth={2.5} />
+      </motion.button>
     </div>
   );
 }

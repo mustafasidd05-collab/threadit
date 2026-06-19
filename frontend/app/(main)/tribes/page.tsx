@@ -1,133 +1,98 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Users, ArrowRight, Plus } from "lucide-react";
 import { tribesApi } from "@/lib/api";
-import type { Tribe } from "@/lib/types";
-import TribeCard from "@/components/TribeCard";
-import { ListSkeleton } from "@/components/Skeleton";
-import { useAuth } from "@/lib/auth";
+import { TribeCardSkeleton } from "@/components/ui/Skeleton";
+import { FadeUp, StaggerList, StaggerItem } from "@/lib/animation";
 
 export default function TribesPage() {
-  const { user } = useAuth();
-  const [tribes, setTribes] = useState<Tribe[]>([]);
+  const [tribes, setTribes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [error, setError] = useState("");
-
-  const loadTribes = () => {
-    setLoading(true);
-    tribesApi.list().then(setTribes).catch(() => {}).finally(() => setLoading(false));
-  };
 
   useEffect(() => {
-    loadTribes();
+    tribesApi
+      .list()
+      .then(setTribes)
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreating(true);
-    setError("");
-    try {
-      await tribesApi.create({ name, description: desc });
-      setName("");
-      setDesc("");
-      loadTribes();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleJoinLeave = async (tribe: Tribe) => {
-    // Optimistic update
-    setTribes((prev) =>
-      prev.map((t) =>
-        t.id === tribe.id
-          ? {
-              ...t,
-              is_member: !t.is_member,
-              member_count: t.is_member ? t.member_count - 1 : t.member_count + 1,
-            }
-          : t
-      )
-    );
-
-    try {
-      if (tribe.is_member) {
-        await tribesApi.leave(tribe.id);
-      } else {
-        await tribesApi.join(tribe.id);
-      }
-    } catch {
-      // Revert on failure
-      setTribes((prev) =>
-        prev.map((t) =>
-          t.id === tribe.id
-            ? {
-                ...t,
-                is_member: tribe.is_member,
-                member_count: tribe.member_count,
-              }
-            : t
-        )
-      );
-    }
-  };
-
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="font-heading font-extrabold text-3xl text-txt tracking-tight mb-2">Tribes</h1>
-      <p className="text-txt-muted text-sm mb-8">Communities you can join</p>
-
-      {user && (
-        <form onSubmit={handleCreate} className="card space-y-3 mb-8">
-          <h2 className="font-heading font-semibold text-gold text-sm">Create a Tribe</h2>
-          {error && <p className="text-xs text-down">{error}</p>}
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="tribe_name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input-field flex-1"
-              required
-              minLength={2}
-              maxLength={50}
-              pattern="^[a-zA-Z0-9_]+$"
-            />
-            <input
-              type="text"
-              placeholder="Description"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              className="input-field flex-1"
-              maxLength={2000}
-            />
-            <button type="submit" disabled={creating} className="btn-primary text-sm whitespace-nowrap flex items-center gap-2">
-              {creating ? (
-                <span className="w-3 h-3 border-2 border-base border-t-transparent rounded-full animate-spin" />
-              ) : null}
-              {creating ? "..." : "Create"}
-            </button>
+    <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-6">
+      <FadeUp>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="font-heading font-bold text-2xl text-txt">
+              Tribes
+            </h1>
+            <p className="text-sm text-txt-muted mt-1">
+              Discover communities that match your interests
+            </p>
           </div>
-        </form>
-      )}
+          <button className="btn-primary flex items-center gap-1.5 text-xs">
+            <Plus size={14} />
+            Create Tribe
+          </button>
+        </div>
+      </FadeUp>
 
       {loading ? (
-        <ListSkeleton count={3} variant="tribe" />
-      ) : tribes.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-txt-muted font-mono text-sm">No tribes yet. Create the first one!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {tribes.map((tribe) => (
-            <TribeCard key={tribe.id} tribe={tribe} onJoinLeave={() => handleJoinLeave(tribe)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <TribeCardSkeleton key={i} />
           ))}
         </div>
+      ) : tribes.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="card text-center py-16"
+        >
+          <Users size={40} className="text-txt-faint mx-auto mb-4" />
+          <p className="font-heading font-semibold text-lg text-txt mb-2">
+            No tribes yet
+          </p>
+          <p className="text-txt-muted text-sm">
+            Create the first community on ThreadIt
+          </p>
+        </motion.div>
+      ) : (
+        <StaggerList className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {tribes.map((tribe) => (
+            <StaggerItem key={tribe.id}>
+              <Link href={`/tribe/${tribe.name}`}>
+                <div className="card-interactive h-full">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-gold/20 to-gold/5 rounded-xl flex items-center justify-center border border-gold/20 shrink-0">
+                      <span className="text-lg font-bold text-gold font-heading">
+                        {tribe.name?.[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-heading font-semibold text-txt">
+                        t/{tribe.name}
+                      </h3>
+                      <p className="text-xs text-txt-faint mt-0.5">
+                        {tribe.member_count ?? 0} members
+                      </p>
+                    </div>
+                    <ArrowRight
+                      size={16}
+                      className="text-txt-faint mt-1 shrink-0"
+                    />
+                  </div>
+                  {tribe.description && (
+                    <p className="text-sm text-txt-muted leading-relaxed line-clamp-2">
+                      {tribe.description}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            </StaggerItem>
+          ))}
+        </StaggerList>
       )}
     </div>
   );

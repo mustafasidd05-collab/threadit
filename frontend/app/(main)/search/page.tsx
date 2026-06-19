@@ -1,81 +1,177 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { searchApi } from "@/lib/api";
 import type { SearchResults } from "@/lib/types";
 import ThreadCard from "@/components/ThreadCard";
 import Link from "next/link";
+import { FadeUp } from "@/lib/animation";
+import { Search, Users, MessageSquare, Loader2 } from "lucide-react";
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!q) return;
+    if (!q) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    searchApi.search(q).then(setResults).catch(() => setResults(null)).finally(() => setLoading(false));
+    setError("");
+    searchApi
+      .search(q)
+      .then((data) => {
+        console.log("Search results:", data);
+        setResults(data);
+      })
+      .catch((err) => {
+        console.error("Search error:", err);
+        setError(err.message || "Search failed");
+        setResults(null);
+      })
+      .finally(() => setLoading(false));
   }, [q]);
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="font-heading font-extrabold text-2xl text-txt tracking-tight mb-2">
-        Search results for &quot;{q}&quot;
-      </h1>
+    <div className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-6">
+      <FadeUp>
+        <div className="mb-6">
+          <h1 className="font-heading font-bold text-2xl text-txt flex items-center gap-2">
+            <Search size={22} className="text-gold" />
+            Search results
+          </h1>
+          {q && (
+            <p className="text-sm text-txt-muted mt-1">
+              for &ldquo;{q}&rdquo;
+            </p>
+          )}
+        </div>
+      </FadeUp>
 
-      {loading ? (
-        <div className="space-y-4 mt-6">{[...Array(3)].map((_, i) => <div key={i} className="card animate-pulse h-24" />)}</div>
+      {!q ? (
+        <div className="card text-center py-12">
+          <Search size={32} className="text-txt-faint mx-auto mb-3" />
+          <p className="text-txt-muted font-medium">
+            Type something to search
+          </p>
+        </div>
+      ) : loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-gold" />
+        </div>
+      ) : error ? (
+        <div className="card text-center py-12">
+          <p className="text-down text-sm">{error}</p>
+        </div>
       ) : !results ? (
-        <p className="text-txt-muted font-mono text-sm mt-6">Search failed</p>
+        <div className="card text-center py-12">
+          <p className="text-txt-muted text-sm">Search failed</p>
+        </div>
       ) : (
-        <div className="mt-6 space-y-8">
+        <div className="space-y-8">
           {/* Threads */}
-          {results.threads.length > 0 && (
-            <section>
-              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider">Threads</h2>
-              <div className="space-y-3">{results.threads.map((t, i) => <ThreadCard key={t.id} thread={t} index={i} />)}</div>
-            </section>
+          {results.threads && results.threads.length > 0 && (
+            <FadeUp>
+              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider flex items-center gap-2">
+                <MessageSquare size={14} />
+                Threads ({results.threads.length})
+              </h2>
+              <div className="space-y-3">
+                {results.threads.map((t: any, i: number) => (
+                  <ThreadCard key={t.id} thread={t} index={i} />
+                ))}
+              </div>
+            </FadeUp>
           )}
 
           {/* Users */}
-          {results.users.length > 0 && (
-            <section>
-              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider">Users</h2>
+          {results.users && results.users.length > 0 && (
+            <FadeUp>
+              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Users size={14} />
+                Users ({results.users.length})
+              </h2>
               <div className="space-y-2">
-                {results.users.map((u) => (
-                  <Link key={u.id} href={`/profile/${u.username}`} className="card flex items-center gap-3 !p-3">
-                    <div className="w-8 h-8 rounded-full bg-surface-3 flex items-center justify-center text-gold text-xs font-mono">
-                      {u.username[0].toUpperCase()}
+                {results.users.map((u: any) => (
+                  <Link
+                    key={u.id}
+                    href={`/profile/${u.username}`}
+                    className="card-interactive flex items-center gap-3 !p-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-surface-3 flex items-center justify-center border border-border">
+                      <span className="text-xs font-bold text-gold">
+                        {u.username?.[0]?.toUpperCase()}
+                      </span>
                     </div>
-                    <span className="text-sm text-txt hover:text-gold transition-colors">@{u.username}</span>
+                    <span className="text-sm text-txt">
+                      {u.username}
+                    </span>
                   </Link>
                 ))}
               </div>
-            </section>
+            </FadeUp>
           )}
 
           {/* Comments */}
-          {results.comments.length > 0 && (
-            <section>
-              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider">Comments</h2>
+          {results.comments && results.comments.length > 0 && (
+            <FadeUp>
+              <h2 className="font-heading font-bold text-gold text-sm mb-3 uppercase tracking-wider">
+                Comments ({results.comments.length})
+              </h2>
               <div className="space-y-2">
-                {results.comments.map((c) => (
-                  <Link key={c.id} href={`/thread/${c.thread_id}`} className="card block !p-3">
-                    <p className="text-sm text-txt line-clamp-2">{c.content}</p>
-                    <p className="text-xs text-txt-muted mt-1 font-mono">by @{c.author.username} in {c.thread_title}</p>
+                {results.comments.map((c: any) => (
+                  <Link
+                    key={c.id}
+                    href={`/thread/${c.thread_id}`}
+                    className="card-interactive block !p-3"
+                  >
+                    <p className="text-sm text-txt line-clamp-2">
+                      {c.content}
+                    </p>
+                    <p className="text-xs text-txt-muted mt-1 font-mono">
+                      by @{c.author?.username} in {c.thread_title}
+                    </p>
                   </Link>
                 ))}
               </div>
-            </section>
+            </FadeUp>
           )}
 
-          {results.threads.length === 0 && results.users.length === 0 && results.comments.length === 0 && (
-            <p className="text-txt-muted font-mono text-sm">No results found for &quot;{q}&quot;</p>
-          )}
+          {/* No results */}
+          {results.threads?.length === 0 &&
+            results.users?.length === 0 &&
+            results.comments?.length === 0 && (
+              <div className="card text-center py-12">
+                <Search
+                  size={32}
+                  className="text-txt-faint mx-auto mb-3"
+                />
+                <p className="text-txt-muted font-medium">
+                  No results found for &ldquo;{q}&rdquo;
+                </p>
+              </div>
+            )}
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={24} className="animate-spin text-gold" />
+        </div>
+      }
+    >
+      <SearchContent />
+    </Suspense>
   );
 }
