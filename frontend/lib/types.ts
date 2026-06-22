@@ -76,3 +76,22 @@ export interface ThreadMedia {
   order_index: number;
   created_at: string;
 }
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  sent_time: string;
+  read_status: boolean;
+}
+
+export interface Conversation {
+  user: {
+    id: string;
+    username: string;
+    avatar_url?: string;
+  };
+  last_message: Message;
+  unread_count: number;
+}
