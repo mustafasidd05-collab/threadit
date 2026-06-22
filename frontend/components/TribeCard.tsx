@@ -21,7 +21,7 @@ export default function TribeCard({ tribe, onJoinLeave }: Props) {
         <p className="text-sm text-txt-muted mt-1 line-clamp-2">{tribe.description}</p>
         <div className="flex items-center gap-3 mt-2 text-xs text-txt-muted font-mono">
           <span>{tribe.member_count} member{tribe.member_count !== 1 ? "s" : ""}</span>
-          <span>Created {formatRelativeTime(tribe.created_at)}</span>
+          <span>Created {tribe.created_at ? formatRelativeTime(tribe.created_at) : "recently"}</span>
         </div>
       </div>
       {onJoinLeave && (
