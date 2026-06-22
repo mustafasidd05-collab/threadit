@@ -87,11 +87,9 @@ export interface Message {
 }
 
 export interface Conversation {
-  user: {
-    id: string;
-    username: string;
-    avatar_url?: string;
-  };
-  last_message: Message;
+  other_user: string;
+  other_username: string;
+  last_message: string;
+  last_message_time: string;
   unread_count: number;
 }
