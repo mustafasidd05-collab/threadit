@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Send, Loader2 } from "lucide-react";
 import { threadsApi } from "@/lib/api";
+import MediaUploader from "./MediaUploader";
+import type { UploadedAsset } from "@/sanity/upload";
 
 interface CreateThreadFormProps {
   tribeId?: string;
@@ -19,6 +21,7 @@ export default function CreateThreadForm({
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mediaAssets, setMediaAssets] = useState<UploadedAsset[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +30,26 @@ export default function CreateThreadForm({
     setError("");
     try {
       await threadsApi.create({
-        title: title.trim(),
-        content: content.trim(),
-        tribe_id: tribeId,
-      });
+    title: title.trim(),
+    content: content.trim(),
+    tribe_id: tribeId,
+    media: mediaAssets.map((a, i) => ({
+    sanity_asset_id: a.assetId,
+    media_type: a.type,
+    url: a.url,
+    width: a.width,
+    height: a.height,
+    duration: a.duration || null,
+    order_index: i,
+})),
+});
       setTitle("");
       setContent("");
       setOpen(false);
       onCreated?.();
     } catch (err: any) {
-      setError(err.message);
+    const msg = typeof err === "string" ? err : err?.message || "Failed to post thread";
+    setError(msg);
     } finally {
       setLoading(false);
     }
@@ -115,6 +128,14 @@ export default function CreateThreadForm({
                   className="input-field resize-none min-h-[120px]"
                   rows={4}
                 />
+              </motion.div>
+
+              <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+              >
+                  <MediaUploader onMediaChange={setMediaAssets} />
               </motion.div>
 
               {/* Error */}

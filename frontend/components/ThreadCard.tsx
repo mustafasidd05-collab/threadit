@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { MessageSquare, Clock } from "lucide-react";
+import { MessageSquare, Clock, Trash2 } from "lucide-react";
 import VoteButtons from "./VoteButtons";
+import ContextMenu from "./ContextMenu";
+import ConfirmModal from "./ConfirmModal";
+import MediaRenderer from "./media/MediaRenderer";
+import { threadsApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 interface ThreadCardProps {
   thread: any;
@@ -25,11 +31,38 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
+  const { user } = useAuth();
+  const [deleted, setDeleted] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const isAuthor = user?.id === thread.author?.id;
+
   const contentPreview = thread.content
     ? thread.content.length > 160
       ? thread.content.slice(0, 160) + "..."
       : thread.content
     : null;
+
+  const score = thread.vote_info?.score ?? 0;
+  const userVote = thread.vote_info?.user_vote ?? 0;
+  const replyCount = thread.reply_count ?? 0;
+  const hasMedia = thread.media && thread.media.length > 0;
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await threadsApi.delete(thread.id);
+      setDeleted(true);
+      setShowDeleteModal(false);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete thread");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (deleted) return null;
 
   return (
     <motion.div
@@ -42,7 +75,7 @@ export default function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
       }}
     >
       <Link href={`/thread/${thread.id}`}>
-        <article className="card-interactive group">
+        <article className="card-interactive group relative">
           <div className="flex gap-3">
             {/* Vote Buttons */}
             <div
@@ -51,8 +84,8 @@ export default function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
             >
               <VoteButtons
                 threadId={thread.id}
-                initialScore={thread.score ?? 0}
-                initialVote={thread.user_vote ?? 0}
+                initialScore={score}
+                initialVote={userVote}
                 compact
               />
             </div>
@@ -69,11 +102,11 @@ export default function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
                 <span className="font-medium text-txt-faint">
                   {thread.author?.username || "unknown"}
                 </span>
-                {thread.tribe && (
+                {thread.tribe_id && (
                   <>
                     <span className="text-txt-faint">in</span>
                     <span className="text-gold font-medium">
-                      t/{thread.tribe.name}
+                      t/{thread.tribe_id}
                     </span>
                   </>
                 )}
@@ -90,22 +123,64 @@ export default function ThreadCard({ thread, index = 0 }: ThreadCardProps) {
 
               {/* Preview */}
               {contentPreview && (
-                <p className="text-sm text-txt-muted leading-relaxed line-clamp-2 mb-3">
+                <p className="text-sm text-txt-muted leading-relaxed line-clamp-2 mb-2">
                   {contentPreview}
                 </p>
+              )}
+
+              {/* Media — images AND videos rendered here */}
+              {hasMedia && (
+                <div className="mb-2">
+                  <MediaRenderer media={thread.media} compact />
+                </div>
               )}
 
               {/* Footer */}
               <div className="flex items-center gap-4 text-xs text-txt-faint">
                 <span className="flex items-center gap-1.5">
                   <MessageSquare size={13} />
-                  {thread.comment_count ?? 0} replies
+                  {replyCount} {replyCount === 1 ? "reply" : "replies"}
                 </span>
               </div>
             </div>
+
+            {/* Three-dot menu */}
+            {isAuthor && (
+              <div
+                className="shrink-0 self-start"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <ContextMenu
+                  items={[
+                    {
+                      label: "Delete",
+                      icon: <Trash2 size={14} />,
+                      onClick: () => setShowDeleteModal(true),
+                      danger: true,
+                    },
+                  ]}
+                />
+              </div>
+            )}
           </div>
         </article>
       </Link>
+
+      {/* Delete confirmation */}
+      <div onClick={(e) => e.preventDefault()}>
+        <ConfirmModal
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          title="Delete Thread"
+          message={`Delete "${thread.title}"? This cannot be undone.`}
+          confirmText="Delete"
+          loading={deleting}
+        />
+      </div>
     </motion.div>
   );
 }

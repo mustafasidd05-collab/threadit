@@ -41,3 +41,6 @@ class Thread(Base):
     children = relationship("Thread", back_populates="parent", lazy="selectin")
     votes = relationship("Vote", back_populates="thread", lazy="selectin")
     tribe = relationship("Tribe", lazy="selectin")
+    
+    media = relationship("ThreadMedia", back_populates="thread", cascade="all, delete-orphan", order_by="ThreadMedia.order_index")
+

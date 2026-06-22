@@ -38,6 +38,7 @@ export interface Thread {
   children?: Thread[];
   vote_info?: VoteInfo;
   is_deleted?: boolean;
+  media: ThreadMedia[];
 }
 
 export interface Comment {
@@ -60,4 +61,18 @@ export interface SearchResults {
   threads: Thread[];
   users: User[];
   comments: CommentResult[];
+}
+
+export interface ThreadMedia {
+  id: string;
+  sanity_asset_id: string;
+  media_type: "image" | "video";
+  url: string;
+  thumbnail_url?: string;
+  caption?: string;
+  duration?: number;
+  width?: number;
+  height?: number;
+  order_index: number;
+  created_at: string;
 }

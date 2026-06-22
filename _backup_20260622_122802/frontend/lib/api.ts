@@ -168,17 +168,6 @@ export const tribesApi = {
     api<any>(`/tribes/${tribeId}/join`, { method: "POST" }),
   leave: (tribeId: string) =>
     api<any>(`/tribes/${tribeId}/leave`, { method: "POST" }),
-  // Admin
-  adminMembers: (tribeId: string) =>
-    api<any[]>(`/tribes/admin/${tribeId}/members`),
-  promote: (tribeId: string, userId: string) =>
-    api<any>(`/tribes/admin/${tribeId}/members/${userId}/promote`, { method: "POST" }),
-  demote: (tribeId: string, userId: string) =>
-    api<any>(`/tribes/admin/${tribeId}/members/${userId}/demote`, { method: "POST" }),
-  removeMember: (tribeId: string, userId: string) =>
-    api<any>(`/tribes/admin/${tribeId}/members/${userId}`, { method: "DELETE" }),
-  deleteTribe: (tribeId: string) =>
-    api<any>(`/tribes/admin/${tribeId}`, { method: "DELETE" }),
 };
 
 

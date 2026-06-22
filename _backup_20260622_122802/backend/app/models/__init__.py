@@ -11,4 +11,3 @@ __all__ = [
     "User", "Thread", "Vote", "Message", "File",
     "OTPVerification", "Tribe", "TribeMember",
 ]
-from app.models.tribe_role import TribeRole

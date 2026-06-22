@@ -1,18 +1,20 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from app.schemas.user import UserOut
+from app.schemas.media import MediaCreate, MediaOut
 
 
 class ThreadCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=300)
-    content: str = Field(..., min_length=1, max_length=50000)
+    content: str = ""
     parent_thread_id: str | None = None
     tribe_id: str | None = None
+    media: list[MediaCreate] = []
 
 
 class ThreadUpdate(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=300)
-    content: str | None = Field(None, min_length=1, max_length=50000)
+    content: str | None = None
 
 
 class VoteInfo(BaseModel):
@@ -32,6 +34,7 @@ class ThreadOut(BaseModel):
     reply_count: int = 0
     vote_info: VoteInfo = VoteInfo()
     is_deleted: bool = False
+    media: list[MediaOut] = []
 
     model_config = {"from_attributes": True}
 

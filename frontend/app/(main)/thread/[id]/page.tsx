@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import ThreadMediaDisplay from "@/components/media/ThreadMediaDisplay";
+import ContextMenu from "@/components/ContextMenu";
+import ConfirmModal from "@/components/ConfirmModal";
 import {
   ArrowLeft,
   MessageSquare,
@@ -14,8 +17,9 @@ import {
   ChevronRight,
   Loader2,
   Send,
+  Trash2,
 } from "lucide-react";
-import { threadsApi } from "@/lib/api";
+import { threadsApi, commentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import VoteButtons from "@/components/VoteButtons";
 import { CommentSkeleton, ThreadCardSkeleton } from "@/components/ui/Skeleton";
@@ -39,13 +43,19 @@ function Comment({
   comment,
   depth = 0,
   onReply,
+  onDelete,
+  currentUser,
 }: {
   comment: any;
   depth?: number;
   onReply: (parentId: string) => void;
+  onDelete: (commentId: string) => void;
+  currentUser: any;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const children = comment.replies || [];
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const children = comment.children || comment.replies || [];
+  const isAuthor = currentUser?.id === comment.author?.id;
 
   return (
     <motion.div
@@ -82,20 +92,40 @@ function Comment({
             <Clock size={9} />
             {timeAgo(comment.created_at)}
           </span>
+          {isAuthor && (
+            <ContextMenu
+              items={[
+                {
+                  label: "Delete",
+                  icon: <Trash2 size={14} />,
+                  onClick: () => setShowDeleteModal(true),
+                  danger: true,
+                },
+              ]}
+            />
+          )}
         </div>
 
         {!collapsed && (
           <div>
-            <p className="text-sm text-txt/90 leading-relaxed pl-7 mb-2">
-              {comment.content}
-            </p>
-            <button
-              onClick={() => onReply(comment.id)}
-              className="flex items-center gap-1.5 text-xs text-txt-faint hover:text-gold pl-7 transition-colors"
-            >
-              <Reply size={12} />
-              Reply
-            </button>
+            {comment.is_deleted ? (
+              <p className="text-sm text-txt-faint italic pl-7 mb-2">
+                [deleted]
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-txt/90 leading-relaxed pl-7 mb-2">
+                  {comment.content}
+                </p>
+                <button
+                  onClick={() => onReply(comment.id)}
+                  className="flex items-center gap-1.5 text-xs text-txt-faint hover:text-gold pl-7 transition-colors"
+                >
+                  <Reply size={12} />
+                  Reply
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -107,11 +137,25 @@ function Comment({
                 comment={child}
                 depth={depth + 1}
                 onReply={onReply}
+                onDelete={onDelete}
+                currentUser={currentUser}
               />
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          onDelete(comment.id);
+          setShowDeleteModal(false);
+        }}
+        title="Delete Comment"
+        message="This comment will be deleted."
+        confirmText="Delete"
+      />
     </motion.div>
   );
 }
@@ -127,6 +171,7 @@ export default function ThreadDetailPage() {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const commentFormRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -160,15 +205,22 @@ export default function ThreadDetailPage() {
         content: commentText,
         parent_thread_id: replyTarget,
       });
-      const data = await threadsApi.detail(id as string);
-      setThread(data);
-      setComments(data.comments || data.children || []);
+      await load();
     } catch (err: any) {
       setNewComment(commentText);
       setReplyTo(replyTarget);
       setSubmitError(err.message || "Failed to post reply");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await commentsApi.delete(commentId);
+      await load();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete comment");
     }
   };
 
@@ -207,8 +259,8 @@ export default function ThreadDetailPage() {
             <div className="shrink-0">
               <VoteButtons
                 threadId={thread.id}
-                initialScore={thread.score ?? 0}
-                initialVote={thread.user_vote ?? 0}
+                initialScore={thread.vote_info?.score ?? 0}
+                initialVote={thread.vote_info?.user_vote ?? 0}
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -245,10 +297,16 @@ export default function ThreadDetailPage() {
                 </p>
               )}
 
+              {thread.media && thread.media.length > 0 && (
+                <div className="mt-3">
+                  <ThreadMediaDisplay media={thread.media} autoPlayVideo />
+                </div>
+              )}
+
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
                 <span className="flex items-center gap-1.5 text-xs text-txt-muted">
                   <MessageSquare size={14} />
-                  {comments.length} replies
+                  {thread.reply_count ?? comments.length} replies
                 </span>
                 <button className="flex items-center gap-1.5 text-xs text-txt-muted hover:text-gold transition-colors">
                   <Share2 size={14} />
@@ -262,7 +320,7 @@ export default function ThreadDetailPage() {
 
       {/* Comment Form */}
       <FadeUp delay={0.1}>
-        <div className="mb-6">
+        <div ref={commentFormRef} className="mb-6">
           {replyTo && (
             <div className="mb-2 flex items-center gap-2 text-xs text-gold">
               <Reply size={12} />
@@ -292,6 +350,11 @@ export default function ThreadDetailPage() {
                   placeholder="Write a reply..."
                   className="input-field resize-none min-h-[60px] text-sm"
                   rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      handleReply();
+                    }
+                  }}
                 />
                 <div className="flex justify-end mt-2">
                   <button
@@ -336,8 +399,13 @@ export default function ThreadDetailPage() {
                 comment={comment}
                 onReply={(parentId) => {
                   setReplyTo(parentId);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  commentFormRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
                 }}
+                onDelete={handleDeleteComment}
+                currentUser={user}
               />
             ))}
           </div>

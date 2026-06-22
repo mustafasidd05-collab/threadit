@@ -23,7 +23,7 @@ class Tribe(Base):
 
     creator = relationship("User", lazy="selectin")
     members = relationship("TribeMember", back_populates="tribe", lazy="selectin")
-    roles = relationship("TribeRole", back_populates="tribe", cascade="all, delete-orphan")
+
 
 class TribeMember(Base):
     __tablename__ = "tribe_members"

@@ -48,8 +48,6 @@ app.include_router(chat.router)
 app.include_router(files.router)
 app.include_router(search.router)
 app.include_router(tribes.router)
-app.include_router(comments_routes.router)
-app.include_router(tribe_admin.router)
 
 
 @app.get("/health")
