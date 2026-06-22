@@ -91,7 +91,7 @@ export default function SearchBar() {
                   className="block px-3 py-2 rounded-lg text-sm text-txt hover:bg-surface-3 transition-colors"
                 >
                   {t.title}
-                  <span className="block text-xs text-txt-muted">by @{t.author.username}</span>
+                  <span className="block text-xs text-txt-muted">by @{t.author?.username || "unknown"}</span>
                 </Link>
               ))}
             </div>
