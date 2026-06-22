@@ -93,3 +93,29 @@ export interface Conversation {
   last_message_time: string;
   unread_count: number;
 }
+
+export interface FileRecord {
+  id: string;
+  filename: string;
+  original_name: string;
+  url: string;
+  mime_type: string;
+  size: number;
+  uploaded_at: string;
+}
+
+export interface ThreadTree {
+  id: string;
+  title: string;
+  content: string;
+  author: User;
+  parent_thread_id: string | null;
+  tribe_id?: string;
+  created_at: string;
+  updated_at: string;
+  reply_count: number;
+  vote_info: VoteInfo;
+  is_deleted: boolean;
+  children: ThreadTree[];
+  media: ThreadMedia[];
+}
