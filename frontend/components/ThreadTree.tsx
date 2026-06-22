@@ -49,7 +49,11 @@ export default function ThreadTree({ thread, depth = 0, onReply, onDeleted }: Pr
       <div className="py-3">
         <div className="flex gap-3">
           {!thread.is_deleted && (
-            <VoteButtons threadId={thread.id} voteInfo={thread.vote_info} />
+            <VoteButtons
+  threadId={thread.id}
+  initialScore={thread.vote_info?.score ?? 0}
+  initialVote={thread.vote_info?.user_vote ?? 0}
+/>
           )}
           <div className="flex-1 min-w-0">
             {depth === 0 && thread.title && (
